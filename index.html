@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VoLab Premium | Giriş</title>
+    
+    <!-- Tailwind & İkonlar -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Firebase SDK (Bağlantı ayarları js/firebase-config.js içinde yapılacak) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <!-- Tasarım Dosyaları -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/auth.css">
+
+    <style>
+        /* Sadece Giriş/Kayıt için gerekli minimal stiller */
+        .screen { display: none !important; width: 100%; min-height: 100vh; position: relative; }
+        .screen.active { display: flex !important; flex-direction: column; }
+        .hidden { display: none !important; }
+        
+        .tooltip-bubble {
+            position: absolute; left: 0; right: 0; top: -45px; background: #0f172a; border: 2px solid rgba(255,255,255,0.1);
+            padding: 8px 12px; border-radius: 1.25rem; box-shadow: 0 10px 20px rgba(0,0,0,1); z-index: 100;
+            pointer-events: none; opacity: 0; transform: translateY(5px); transition: all 0.2s ease-out;
+        }
+        .tooltip-bubble.visible { opacity: 1; transform: translateY(0); }
+        .tooltip-bubble ul li { display: flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 900; text-transform: uppercase; margin-bottom: 1px; }
+        
+        #tt-regPass { top: -105px; }
+        .btn-locked { background: #1a1a1a !important; color: #444 !important; opacity: 0.5; filter: grayscale(1); cursor: not-allowed; border: 1px solid rgba(255,255,255,0.05) !important; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* Doğum tarihi takvim ikonu üst üste binmesin diye */
+        .date-input-wrapper { position: relative; width: 100%; }
+        .date-icon-btn { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #64748b; z-index: 5; pointer-events: none; }
+        #hiddenDatePicker { position: absolute; right: 8px; top: 0; width: 40px; height: 100%; opacity: 0; cursor: pointer; z-index: 10; }
+    </style>
+</head>
+<body class="bg-[#07070a] text-white">
+
+    <!-- Sistem Mesaj Kutusu -->
+    <div id="errorBox" class="fixed top-5 left-1/2 -translate-x-1/2 z-[1000] hidden w-[90%] max-w-md">
+        <div class="bg-slate-900 border border-cyan-500 text-cyan-200 px-6 py-4 rounded-3xl shadow-2xl flex items-center backdrop-blur-xl border-l-4 border-l-cyan-500">
+            <i data-lucide="shield-alert" class="w-5 h-5 mr-3 text-cyan-500"></i>
+            <span class="text-xs font-black tracking-widest uppercase" id="errorMessage">MESAJ</span>
+        </div>
+    </div>
+
+    <!-- 1. GİRİŞ EKRANI -->
+    <div id="loginScreen" class="screen active justify-center items-center p-6">
+        <div class="mb-10 flex flex-col items-center">
+            <!-- V Yazısı Yerine Yeni Logo Eklendi -->
+            <img src="logos/vlogo.png" alt="VoLab Logo" class="w-28 h-28 mb-4 object-contain drop-shadow-[0_0_25px_rgba(0,243,255,0.4)]" onerror="this.src='logos/default.png'">
+            
+            <!-- VoLab BETA Yazısı -->
+            <h2 class="text-5xl font-black tracking-tighter italic flex items-baseline justify-center">
+                VoLab <span class="text-teal-400 text-2xl uppercase tracking-widest ml-2">BETA</span>
+            </h2>
+            <p class="text-[10px] text-cyan-400 mt-2 uppercase tracking-[0.5em] font-bold">Cloud Analiz Sistemi</p>
+        </div>
+        <div class="w-full max-w-md glass-panel p-10 rounded-[3.5rem] shadow-2xl border border-white/5 space-y-6">
+            <input type="text" id="loginId" class="w-full bg-[#0a0a0f] border border-white/5 rounded-2xl py-5 px-6 focus:border-cyan-500 outline-none font-bold text-white transition-all" placeholder="Kullanıcı Adı">
+            <input type="password" id="loginPw" class="w-full bg-[#0a0a0f] border border-white/5 rounded-2xl py-5 px-6 focus:border-purple-500 outline-none font-bold text-white transition-all" placeholder="Şifre">
+            <button type="button" onclick="window.AuthModule.login()" class="w-full bg-gradient-to-r from-cyan-600 to-purple-600 rounded-2xl py-5 font-black active:scale-95 transition-all uppercase italic tracking-widest shadow-xl cursor-pointer">GİRİŞ YAP</button>
+            <div class="text-center">
+                <button type="button" onclick="window.AuthModule.switchScreen('registerScreen')" class="text-[10px] text-slate-500 font-bold uppercase tracking-widest hover:text-cyan-400 transition-colors underline cursor-pointer">HESAP OLUŞTUR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. KAYIT EKRANI -->
+    <div id="registerScreen" class="screen p-6 overflow-y-auto">
+        <header class="w-full max-w-md flex items-center justify-between mb-8 mt-4 mx-auto">
+            <button type="button" onclick="window.AuthModule.switchScreen('loginScreen')" class="bg-white/5 p-3 rounded-2xl text-slate-400 active:scale-90 shadow-lg cursor-pointer"><i data-lucide="chevron-left"></i></button>
+            <h1 class="text-xl font-black italic uppercase gradient-text tracking-tighter text-center flex-1">Yeni Kayıt</h1>
+        </header>
+        <div class="w-full max-w-md glass-panel p-8 pt-10 rounded-[3rem] space-y-8 border border-white/5 mb-20 relative mx-auto">
+            <!-- Kullanıcı Adı -->
+            <div class="input-container relative">
+                <div id="tt-regUser" class="tooltip-bubble">
+                    <ul class="space-y-1">
+                        <li id="req-u-len" class="text-red-500"><i data-lucide="x-circle" class="w-3 h-3"></i> 8+ Karakter</li>
+                        <li id="req-u-up" class="text-red-500"><i data-lucide="x-circle" class="w-3 h-3"></i> 1 Büyük Harf</li>
+                    </ul>
+                </div>
+                <label class="text-[9px] text-slate-500 font-bold ml-2 uppercase tracking-widest">Kullanıcı Adı</label>
+                <input type="text" id="regUser" class="w-full bg-[#0a0a0f] border border-white/5 rounded-2xl py-4 px-6 outline-none font-bold text-sm transition-all" placeholder="Kullanıcı Adınız">
+            </div>
+            <!-- Şifre -->
+            <div class="input-container relative">
+                <div id="tt-regPass" class="tooltip-bubble">
+                    <ul class="space-y-1">
+                        <li id="req-p-len" class="text-red-500"><i data-lucide="x-circle" class="w-3 h-3"></i> 8+ Karakter</li>
+                        <li id="req-p-up" class="text-red-500"><i data-lucide="x-circle" class="w-3 h-3"></i> 1 Büyük Harf</li>
+                        <li id="req-p-num" class="text-red-500"><i data-lucide="x-circle" class="w-3 h-3"></i> 1 Rakam</li>
+                        <li id="req-p-spec" class="text-red-500"><i data-lucide="x-circle" class="w-3 h-3"></i> 1 Özel İşaret</li>
+                    </ul>
+                </div>
+                <label class="text-[9px] text-slate-500 font-bold ml-2 uppercase tracking-widest">Şifre</label>
+                <input type="password" id="regPass" class="w-full bg-[#0a0a0f] border border-white/5 rounded-2xl py-4 px-6 outline-none font-bold text-sm transition-all">
+            </div>
+            <!-- Şifre Tekrar -->
+            <div class="input-container relative">
+                <div id="tt-regPassConf" class="tooltip-bubble">
+                    <p id="req-pc-match" class="text-[9px] font-black uppercase text-red-500 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i> Şifreler Eşleşmiyor</p>
+                </div>
+                <label class="text-[9px] text-slate-500 font-bold ml-2 uppercase tracking-widest">Şifre Tekrar</label>
+                <input type="password" id="regPassConfirm" class="w-full bg-[#0a0a0f] border border-white/5 rounded-2xl py-4 px-6 outline-none font-bold text-sm transition-all">
+            </div>
+            <!-- E-Posta -->
+            <div class="input-container relative">
+                <div id="tt-regEmail" class="tooltip-bubble">
+                    <p id="req-e-valid" class="text-[9px] font-black uppercase text-red-500 flex items-center gap-1"><i data-lucide="at-sign" class="w-3 h-3"></i> Geçersiz E-Posta</p>
+                </div>
+                <label class="text-[9px] text-slate-500 font-bold ml-2 uppercase tracking-widest">E-Posta</label>
+                <input type="email" id="regEmail" class="w-full bg-[#0a0a0f] border border-white/5 rounded-2xl py-4 px-6 outline-none font-bold text-sm transition-all">
+            </div>
+            <!-- Telefon -->
+            <div class="input-container relative">
+                <div id="tt-regPhone" class="tooltip-bubble">
+                    <p id="req-ph-valid" class="text-[9px] font-black uppercase text-red-500 flex items-center gap-1"><i data-lucide="phone-off" class="w-3 h-3"></i> 10 Hane (0 koymayın)</p>
+                </div>
+                <label class="text-[9px] text-slate-500 font-bold ml-2 uppercase tracking-widest">Telefon</label>
+                <input type="tel" id="regPhone" maxlength="10" inputmode="numeric" class="w-full bg-[#0a0a0f] border border-white/5 rounded-2xl py-4 px-6 outline-none font-bold text-sm transition-all" placeholder="5xx xxx xxxx">
+            </div>
+            <!-- Doğum Tarihi -->
+            <div class="input-container relative">
+                <div id="tt-regDob" class="tooltip-bubble">
+                    <p id="req-d-valid" class="text-[9px] font-black uppercase text-red-500 flex items-center gap-1"><i data-lucide="user-x" class="w-3 h-3"></i> 18 Yaş Sınırı</p>
+                </div>
+                <label class="text-[9px] text-slate-500 font-bold ml-2 uppercase tracking-widest">Doğum Tarihi</label>
+                <div class="date-input-wrapper">
+                    <input type="text" id="regDob" maxlength="10" inputmode="numeric" placeholder="GG / AA / YYYY" class="w-full bg-[#0a0a0f] border border-white/5 rounded-2xl py-4 px-6 outline-none font-bold text-sm text-slate-300 transition-all">
+                    <div class="date-icon-btn"><i data-lucide="calendar" class="w-4 h-4"></i></div>
+                    <input type="date" id="hiddenDatePicker">
+                </div>
+            </div>
+            <button type="button" id="btn_register_submit" onclick="window.AuthModule.register()" class="btn-locked w-full rounded-2xl py-5 font-black transition-all duration-300 uppercase italic tracking-widest shadow-xl mt-4 cursor-pointer">KAYDI TAMAMLA</button>
+        </div>
+    </div>
+
+<!-- Motor Dosyaları -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/animations.js"></script> 
+    <script src="js/auth.js"></script>
+    <script>if(window.lucide) window.lucide.createIcons();</script>
+    
+</body>
+</html>
+
+
